@@ -36,7 +36,7 @@ void playHangman() {
         std::cout << "\n" << game.masked() << "    (lives left: " << Hangman::MAX_WRONG - game.wrongGuesses() << ")\nGuess a letter: ";
         char letter;
         std::cin >> letter;
-        std::cout << (game.guess(letter) ? "Yes!\n" : "Nope.\n");
+        std::cout << (game.guess(tolower(letter)) ? "Yes!\n" : "Nope.\n");
     }
     if (game.won()) std::cout << "\nYou got it: " << game.word() << "\n";
     else std::cout << "\nOut of lives! The word was: " << game.word() << "\n";
