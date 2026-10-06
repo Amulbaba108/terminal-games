@@ -1,6 +1,7 @@
 #include "tictactoe.h"
 
 #include <iostream>
+int dp[20000];
 
 namespace {
 
@@ -30,6 +31,8 @@ void show(const Board& board) {
 
 }  // namespace
 
+
+
 char winner(const Board& board) {
     for (const auto& line : LINES) {
         char a = board[line[0]];
@@ -44,17 +47,76 @@ bool isFull(const Board& board) {
     return true;
 }
 
-int computerMove(const Board& board, char me, char opponent) {
-    int square = winningSquare(board, me);  // win
-    if (square != -1) return square;
-    square = winningSquare(board, opponent);  // block
-    if (square != -1) return square;
-    for (int preferred : {4, 0, 2, 6, 8, 1, 3, 5, 7})  // centre, corners, sides
-        if (board[preferred] == ' ') return preferred;
-    return -1;
+int state(const Board&board){
+    int ans = 0;
+    int mul = 1;
+    for(int i=0;i<9;i++){
+        int val;
+        if(board[i]==' ') val = 0;
+        if(board[i]=='O') val = 1;
+        if(board[i]=='X') val = 2;
+        ans+=val*mul;
+        mul*=3;
+    }
+    return ans;
+}
+
+int max(int a,int b){
+    if(a>b) return a;
+    return b;
+}
+
+int chooseMove(Board board, char me, char opponent) {
+    if(dp[state(board)]!=-2) return dp[state(board)];
+    if(winner(board)==me){
+        dp[state(board)]=1;
+        return 1;
+    }
+    else if(winner(board)==opponent){
+        dp[state(board)]=-1;
+        return -1;
+    }
+    else if(isFull(board)){
+        dp[state(board)]=0;
+        return 0;
+    }
+    int best_score = -2;
+    for(int i=0;i<9;i++){
+        if(board[i]==' '){
+            Board next = board;
+            next[i]=me;
+            int ret = -1*chooseMove(next,opponent,me);
+            best_score = max(best_score,ret);
+        }
+    }
+    dp[state(board)]=best_score;
+    return best_score;
+}
+
+void resetMemo(){
+    for(int i=0;i<20000;i++) dp[i]=-2;
+}
+
+int computerMove(const Board &board, char me, char opponent){
+    // Tie-break order when moves score equally: centre, corners, edges.
+    static const int ORDER[9] = {4, 0, 2, 6, 8, 1, 3, 5, 7};
+    int move = -1;
+    int best_score = -2;
+    for(int i : ORDER){
+        if(board[i]!=' ') continue;
+        Board next = board;
+        next[i]=me;
+        int score = -chooseMove(next,opponent,me);  // chooseMove scores for the side to move
+        if(score>best_score){
+            best_score = score;
+            move = i;
+        }
+    }
+    return move;
 }
 
 void playTicTacToe() {
+    resetMemo();
     Board board;
     board.fill(' ');
     std::cout << "\nYou are X, the computer is O. Squares are numbered 1-9.\n\n";

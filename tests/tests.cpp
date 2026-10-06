@@ -21,7 +21,30 @@ static Board board(const std::string& s) {
     return b;
 }
 
+// Plays every possible sequence of X (player) moves, O (computer) replies with
+// computerMove each time. Returns false if X ever wins or O makes an illegal move.
+static int gamesPlayed = 0;
+
+static bool computerNeverLoses(const Board& b) {
+    for (int i = 0; i < 9; i++) {
+        if (b[i] != ' ') continue;
+        Board next = b;
+        next[i] = 'X';
+        if (winner(next) == 'X') return false;
+        if (isFull(next)) { gamesPlayed++; continue; }
+
+        int m = computerMove(next, 'O', 'X');
+        if (m < 0 || m > 8 || next[m] != ' ') return false;
+        next[m] = 'O';
+        if (winner(next) == 'O' || isFull(next)) { gamesPlayed++; continue; }
+
+        if (!computerNeverLoses(next)) return false;
+    }
+    return true;
+}
+
 static void testTicTacToe() {
+    resetMemo();  
     CHECK(winner(board("XXX OO   ")) == 'X');
     CHECK(winner(board("O  O  O  ")) == 'O');
     CHECK(winner(board("X   X   X")) == 'X');
@@ -29,8 +52,13 @@ static void testTicTacToe() {
     CHECK(winner(board("XOXOXOOXO")) == ' ');
     CHECK(isFull(board("XOXOXOOXO")));
     CHECK(computerMove(board("OO XX    "), 'O', 'X') == 2);  // takes the win
-    CHECK(computerMove(board("XX O     "), 'O', 'X') == 2);  // blocks
+    CHECK(computerMove(board("XX  O    "), 'O', 'X') == 2);  // blocks (only non-losing move)
     CHECK(computerMove(board("         "), 'O', 'X') == 4);  // centre first
+
+    resetMemo();  // boards above aren't all legal positions; start the memo clean
+    gamesPlayed = 0;
+    CHECK(computerNeverLoses(board("         ")));  // X moves first, every line of play
+    CHECK(gamesPlayed > 0);                          // check that atleast 1 game is played and test done
 }
 
 static void test2048() {
